@@ -6,68 +6,15 @@ on:
       - master
 
 jobs:
-  filter:
-    runs-on: ubuntu-latest
-    outputs:
-      terraform: ${{ steps.filter.outputs.terraform }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Filter changes
-        id: filter
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            terraform:
-              - 'terraform/**'
 
   deploy-infra-on-prod:
-    runs-on: ubuntu-latest
     name: Deploy Terraform Infra changs to Prod 
-    if: ${{ needs.filter.outputs.terraform == 'true' }}
-    steps:
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          
-      - name: Setup terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform fmt
-        id: fmt
-        run: terraform fmt -check
-        continue-on-error: true
-
-      - name: Terraform Init
-        id: init
-        run: terraform init -input=false
-      
-      - name: Select or create workspace
-        run: |
-          WORKSPACE=prod
-          # Check if workspace exists
-          if terraform workspace list | grep -q "^${WORKSPACE}$"; then
-            echo "Workspace ${WORKSPACE} exists. Selecting..."
-            terraform workspace select $WORKSPACE
-          else
-            echo "Workspace ${WORKSPACE} does not exist. Creating..."
-            terraform workspace new $WORKSPACE
-          fi
-
-      - name: Terraform Validate
-        id: validate
-        run: terraform validate -no-color
-
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color -input=false
-        continue-on-error: false
-
-      - name: Terraform Apply
-        id: apply
-        run: terraform apply -auto-approve
-        continue-on-error: false    
+    uses: ./.github/workflows/reusable-terraform.yml
+    with:
+      environment: prod
+    secrets:
+      AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
   deploy-to-prod:
       name: Deply to Production
