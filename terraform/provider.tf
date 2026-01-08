@@ -4,15 +4,15 @@ terraform {
       source  = "hashicorp/aws"
       version = "6.27.0"
     }
-  } /*
+  }
     backend "s3" {
-    bucket         = "my-terraform-state-bucket"
+    bucket         = "terraform-state-bucket-petclinic"
     key            = "springboot/dev/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
-  } */
+  } 
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region     = "us-east-1"
 }

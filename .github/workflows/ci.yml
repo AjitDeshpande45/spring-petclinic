@@ -93,7 +93,7 @@ jobs:
         run: echo "${GITHUB_SHA::8}" > image_sha.txt
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image-info
           path: image_sha.txt
@@ -121,24 +121,31 @@ jobs:
   infra-terraform-steps:
     needs: [checkout-validate,security-scanning-testing, docker-stage, filter ]
     if: ${{ needs.filter.outputs.terraform == 'true' }}
-    runs-on: ubuntu-ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: "us-east-1"
+
       - name: Setup terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform fmt
-        id: fmt
-        run: terraform fmt -check
-        continue-on-error: true
-
       - name: Terraform Init
         id: init
+        working-directory: terraform
         run: terraform init -input=false
       
       - name: Select or create workspace
         run: |
           WORKSPACE=dev
           # Check if workspace exists
+          cd terraform
           if terraform workspace list | grep -q "^${WORKSPACE}$"; then
             echo "Workspace ${WORKSPACE} exists. Selecting..."
             terraform workspace select $WORKSPACE
@@ -149,15 +156,18 @@ jobs:
 
       - name: Terraform Validate
         id: validate
+        working-directory: terraform
         run: terraform validate -no-color
 
       - name: Terraform Plan
         id: plan
+        working-directory: terraform
         run: terraform plan -no-color -input=false
         continue-on-error: false
 
       - name: Terraform Apply
         id: apply
+        working-directory: terraform
         run: terraform apply -auto-approve
         continue-on-error: false     
       
