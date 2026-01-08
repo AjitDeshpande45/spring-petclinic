@@ -11,10 +11,6 @@ on:
           - dev
           - prod
 
-  push:
-    branches:
-      - develop
-
 jobs:
   tf-destroy:
     name: TF destroy

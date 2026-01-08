@@ -3,7 +3,7 @@ name: CD Pipeline for petclinic project
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
 
