@@ -10,13 +10,16 @@ on:
         options:
           - dev
           - prod
+
   push:
-   branches:
-     - develop
+    branches:
+      - develop
+
 jobs:
   tf-destroy:
     name: TF destroy
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -26,15 +29,21 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          aws-region: "us-east-1"
+          aws-region: us-east-1
 
-      - name: Setup terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Select Workflow
+      - name: Terraform Init
         working-directory: terraform
-        run: terraform workspace select ${{ inputs.environment }}
-      
-      - name: Terraform destroy command
+        run: terraform init -input=false
+
+      - name: Select Terraform Workspace
+        working-directory: terraform
+        run: |
+          terraform workspace select ${{ inputs.environment }} \
+          || terraform workspace new ${{ inputs.environment }}
+
+      - name: Terraform Destroy
         working-directory: terraform
         run: terraform destroy -auto-approve
