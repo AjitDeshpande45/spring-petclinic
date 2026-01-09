@@ -34,6 +34,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - name: Terraform Init
         working-directory: ${{ inputs.working-directory }}
@@ -65,7 +67,12 @@ jobs:
         id: get-ip
         working-directory: ${{ inputs.working-directory }}
         run: |
+            echo "Current path"
+            pwd
+            echo "Current files under folder"
+            ls
             PUBLIC_IP=$(terraform output -raw ec2_public_ip)
+            echo "public_ip=$PUBLIC_IP"
             echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
 
       - name: Store PEM file as secret
