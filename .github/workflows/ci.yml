@@ -33,7 +33,6 @@ jobs:
   security-scanning-testing:
     name: Security scanning and testing
     runs-on: ubuntu-latest
-    needs: checkout-validate
 
     steps:
     - name: Checkout Code
@@ -97,7 +96,7 @@ jobs:
 
 
   infra-terraform-steps:
-    needs: [checkout-validate,security-scanning-testing, docker-stage ]
+    needs: [docker-stage ]
     uses: ./.github/workflows/reusable-terraform.yml
     with:
       environment: dev
@@ -107,14 +106,15 @@ jobs:
 
   deploy-to-dev:
       name: Deply to Dev
-      uses: ./.github/workflows/reusable-deploy.yml
+      needs: [infra-terraform-steps ]
+      uses: ./.github/workflows/reusable-deployment.yml
       with:
         env: dev
 
         
   raise-prod-pr:
     runs-on: ubuntu-latest
-    needs: [infra-terraform-steps]
+    needs: [deploy-to-dev]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
