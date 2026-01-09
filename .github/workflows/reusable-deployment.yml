@@ -1,0 +1,43 @@
+name: Reusable workflow for deploying code to dev & prod env
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        required: true
+        default: dev
+        type: string
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+    name: Deply job
+    steps:
+
+        - name: Setup SSH
+          env:
+            PEM_CONTENT: ${{ secrets[format('PET_CLINIC_PEM_FILE_{0}', inputs.env)] }}
+          run: |
+            mkdir -p ~/.ssh
+            echo "$PEM_CONTENT" > ~/.ssh/id_rsa
+            chmod 400 ~/.ssh/id_rsa
+
+        - name: Remote exec on EC2
+          env: 
+            EC2_HOST: ${{ vars[format('PET_CLINIC_EC2_IP_{0}', inputs.env)] }}
+            DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+            IMAGE_TAG: ${{ vars.DOCKER_TAG_IMAGE }}
+          run: |
+            echo "Using image: $DOCKERHUB_USERNAME/petclinic-app:$IMAGE_TAG"
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$EC2_HOST << EOF
+              docker --version
+              if [ \$(docker ps -a -q -f name=petclinic-petclinic-container) ]; then
+                echo "Container exists. Stopping and removing..."
+                sudo docker stop petclinic-petclinic-container
+                sudo docker rm petclinic-petclinic-container
+              else
+                echo "Container does not exist. Skipping removal."
+              fi
+              sudo docker run -p 8080:8080 -d --name petclinic-petclinic-container $DOCKERHUB_USERNAME/petclinic-app:$IMAGE_TAG
+            EOF
+

@@ -11,3 +11,8 @@ resource "aws_instance" "public_ec2_instance" {
     Name = "${terraform.workspace}-petclinic_ec2_instance"
   }
 }
+
+output "ec2_public_ip" {
+  description = "Public IP of EC2 instance"
+  value       = aws_instance.public_ec2_instance.public_ip
+}
